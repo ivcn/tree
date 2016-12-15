@@ -22,6 +22,7 @@ public:
     Node& operator=(const Node& other) = delete;
 
     Node(Node&& n) = default;
+    Node& operator=(Node&& n) = default;
 
     ~Node() = default;
 
@@ -31,11 +32,11 @@ public:
             new T(std::forward<Types>(args)...));
     }
 
-	const UPtr<Node<T>>& getLeft() {
+	const UPtr<Node<T>>& getLeft() const {
 		return left;
 	}
 
-	const UPtr<Node<T>>& getRight() {
+	const UPtr<Node<T>>& getRight() const {
 		return right;
 	}
 
@@ -43,22 +44,26 @@ public:
 		return data;
 	}
 
-    void setLeft(const UPtr<Node<T>>& p) {
+    void setLeft(UPtr<Node<T>> p) {
         left = std::move(p);
     }
 
-    void setRight(const UPtr<Node<T>>& p) {
+    void setRight(UPtr<Node<T>> p) {
         right = std::move(p);
     }
 
-    void setContent(const UPtr<T>& p) {
+    void setContent(const UPtr<T> p) {
         data = std::move(p);
+    }
+
+    inline bool isLeaf() {
+        return (getLeft() == nullptr && getRight() == nullptr);
     }
 
 private:
 	UPtr<T> data;
-	UPtr<T> left;
-	UPtr<T> right;
+	UPtr<Node<T>> left;
+	UPtr<Node<T>> right;
 };
 
 #endif __NODE_HPP__
