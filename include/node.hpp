@@ -10,7 +10,7 @@ using UPtr = std::unique_ptr<T>;
 template<class T>
 class Node {
 public:
-	Node(T* ptr) {
+	Node(T* ptr = nullptr) {
         data.reset(ptr);
     }
 
@@ -32,16 +32,22 @@ public:
             new T(std::forward<Types>(args)...));
     }
 
-	const UPtr<Node<T>>& getLeft() const {
+    bool isEmpty() const {
+        return data == nullptr;
+    }
+
+	UPtr<Node<T>>& getLeft() {
 		return left;
 	}
 
-	const UPtr<Node<T>>& getRight() const {
+	UPtr<Node<T>>& getRight() {
 		return right;
 	}
 
-	UPtr<T>& getContent() {
-		return data;
+	const T& getContent() const {
+        if (!data)
+            throw std::runtime_error("Reading content of empty node");
+        return *data;
 	}
 
     void setLeft(UPtr<Node<T>> p) {
@@ -52,7 +58,7 @@ public:
         right = std::move(p);
     }
 
-    void setContent(const UPtr<T> p) {
+    void setContent(UPtr<T> p) {
         data = std::move(p);
     }
 
