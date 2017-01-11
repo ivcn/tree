@@ -3,6 +3,9 @@
 
 #include <node.hpp>
 
+#include <functional>
+#include <stack>
+
 template<class T>
 using UPtrNode = std::unique_ptr<Node<T>>;
 
@@ -23,8 +26,20 @@ public:
 
     ~Tree() = default;
 
+    UPtrNode<Type>& getRoot() {
+        return root;
+    }
+
+    void setRoot(UPtrNode<Type> node) {
+        root = std::move(node);
+    }
+
     void insert(const Type& el) {
         addNode(getRoot(), std::move(Node<Type>::makeNode(el)));
+    }
+
+    bool empty() {
+        return getRoot() == nullptr;
     }
 
     void remove(const Type& el) {
@@ -74,13 +89,22 @@ public:
         }
     }
 
+    enum class TraverseType {
+        PreOrder,
+        InOrder,
+        PostOrder
+    };
 
-    UPtrNode<Type>& getRoot() {
-        return root;
-    }
-
-    void setRoot(UPtrNode<Type> node) {
-        root = std::move(node);
+    void traverse(TraverseType type, std::function<void(Type)> action) {
+        if (type == TraverseType::PreOrder) {
+            preOrderTraversal(action);
+        }
+        else if (type == TraverseType::InOrder) {
+            inOrderTraversal(action);
+        }
+        else { // type == TraverseType::PostOrder
+            postOrderTraversal(action);
+        }
     }
 
 private:
@@ -92,7 +116,7 @@ private:
         }
         auto currentRoot = subroot.get();
         while (currentRoot != nullptr) {
-            auto branch = currentRoot->getContent() <= newNode->getContent() ?
+            auto branch = newNode->getContent() <= currentRoot->getContent() ?
                 currentRoot->getLeft().get() :
                 currentRoot->getRight().get();
             if (branch == nullptr)
@@ -100,11 +124,78 @@ private:
             else
                 currentRoot = branch;
         }
-        if (currentRoot->getContent() <= newNode->getContent()) {
+        if (newNode->getContent() <= currentRoot->getContent()) {
             currentRoot->setLeft(std::move(newNode));
         }
         else {
             currentRoot->setRight(std::move(newNode));
+        }
+    }
+
+    void preOrderTraversal(std::function<void(Type)> visit) {
+        std::stack<Node<Type>*> stack;
+        stack.push(getRoot().get());
+        while (!stack.empty()) {
+            auto node = stack.top();
+            stack.pop();
+            visit(node->getContent());
+            if (node->hasRight())
+                stack.push(node->getRight().get());
+            if (node->hasLeft())
+                stack.push(node->getLeft().get());
+        }
+    }
+
+    void inOrderTraversal(std::function<void(Type)> visit) {
+        std::stack<Node<Type>*> stack;
+        auto node = getRoot().get();
+        while (!stack.empty() || node != nullptr) {
+            if (node != nullptr) {
+                stack.push(node);
+                node = node->getLeft().get();
+            }
+            else {
+                node = stack.top();
+                stack.pop();
+                visit(node->getContent());
+                node = node->getRight().get();
+            }
+        }
+    }
+
+    void postOrderTraversal(std::function<void(Type)> visit) {
+        std::stack<Node<Type>*> stack;
+        stack.push(getRoot().get());
+        auto node = stack.top();
+        while (!stack.empty()) {
+            if (node != nullptr) {
+                if(node->hasRight())
+                    stack.push(node->getRight().get());
+                if(node->hasLeft())
+                    stack.push(node->getLeft().get());
+                node = node->getLeft().get();
+            }
+            else {
+                // we came to leaf
+                if (stack.top() == nullptr) {
+                    // there is no such child.
+                    // Proceed to search. Sometimes we'll find some left child 
+                    continue;
+                }
+                visit(stack.top()->getContent());
+                auto tmp = stack.top();
+                stack.pop();
+                if (stack.empty())
+                    break;
+                if (stack.top()->isLeaf() || stack.top()->isParent(tmp)) {
+                    visit(stack.top()->getContent());
+                    stack.pop();
+                }
+                else {
+                    // visit right subtree
+                    node = stack.top();
+                }
+            }
         }
     }
 

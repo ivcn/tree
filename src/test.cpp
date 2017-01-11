@@ -84,12 +84,68 @@ TEST_CASE("Node<T>::makeNode is correctly creates objects", "[Node<T>::makeNode]
     REQUIRE(upn3->getContent().d == "nothing");
 }
 
-TEST_CASE("Cons of Tree class are working correctly", "Tree()") {
+TEST_CASE("Insertion to empty tree is working", "[Tree]") {
     Tree<SomeClass> t;
-    REQUIRE(t.getRoot() == nullptr);
+    REQUIRE(t.empty());
     auto sc = SomeClass(3, 3, 3.0, "qwe");
     t.insert(sc);
     REQUIRE(t.getRoot()->getContent() == sc);
     t.remove(sc);
-    REQUIRE(t.getRoot() == nullptr);
+    REQUIRE(t.empty());
+}
+
+TEST_CASE("Insertion and removing are working", "[Tree::insert, Tree::remove]") {
+    Tree<SomeClass> t;
+    auto sc3 = SomeClass(3, 3, 3.0, "qwe");
+    auto sc2 = SomeClass(2, 3, 3.0, "qwe");
+    auto sc4 = SomeClass(4, 3, 3.0, "qwe");
+    auto sc5 = SomeClass(5, 0, 5.5, "asd");
+    t.insert(sc3);
+    t.insert(sc2);
+    REQUIRE(!t.getRoot()->isLeaf());
+    REQUIRE(t.getRoot()->hasLeft());
+    REQUIRE(!t.getRoot()->hasRight());
+    REQUIRE(t.getRoot()->getLeft()->getContent().a == 2);
+    t.insert(sc4);
+    REQUIRE(t.getRoot()->hasRight());
+    REQUIRE(t.getRoot()->getRight()->isLeaf());
+    REQUIRE(t.getRoot()->getRight()->getContent().a == 4);
+    t.insert(sc5);
+    REQUIRE(!t.getRoot()->getRight()->isLeaf());
+    REQUIRE(t.getRoot()->getRight()->hasRight());
+    REQUIRE(t.getRoot()->getRight()->getRight()->getContent().a == 5);
+    /*
+            3
+           / \
+          2   4
+               \
+                5
+    */
+    t.remove(sc3);
+    REQUIRE(t.getRoot()->getContent().a == 2);
+    REQUIRE(!t.getRoot()->hasLeft());
+    REQUIRE(t.getRoot()->hasRight());
+    REQUIRE(t.getRoot()->getRight()->getContent().a == 4);
+    REQUIRE(t.getRoot()->getRight()->getRight()->getContent().a == 5);
+    REQUIRE(t.getRoot()->getRight()->getRight()->isLeaf());
+
+    /*      2
+             \
+              4
+               \
+                5
+    */
+}
+
+TEST_CASE("Test tree traversals", "Tree::traverse") {
+    Tree<SomeClass> t;
+    for (int i = 0; i < 50; i++) {
+        t.insert(SomeClass(i));
+    }
+    t.traverse(Tree<SomeClass>::TraverseType::PreOrder, [](SomeClass sc) {cout << sc.a << "-"; });
+    cout << endl;
+    t.traverse(Tree<SomeClass>::TraverseType::InOrder, [](SomeClass sc) {cout << sc.a << "-"; });
+    cout << endl;
+    t.traverse(Tree<SomeClass>::TraverseType::PostOrder, [](SomeClass sc) {cout << sc.a << "-"; });
+    cout << endl;
 }

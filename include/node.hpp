@@ -36,6 +36,18 @@ public:
         return data == nullptr;
     }
 
+    bool hasLeft() {
+        return left != nullptr;
+    }
+
+    bool hasRight() {
+        return right != nullptr;
+    }
+    
+    bool isParent(const Node<T>* node) {
+        return left.get() == node || right.get() == node;
+    }
+
 	UPtr<Node<T>>& getLeft() {
 		return left;
 	}
@@ -63,7 +75,7 @@ public:
     }
 
     inline bool isLeaf() {
-        return (getLeft() == nullptr && getRight() == nullptr);
+        return !hasLeft() && !hasRight();
     }
 
 private:
