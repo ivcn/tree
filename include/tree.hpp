@@ -95,15 +95,15 @@ public:
         PostOrder
     };
 
-    void traverse(TraverseType type, std::function<void(Type)> action) {
+    void traverse(TraverseType type, std::function<void(Type)> visit) {
         if (type == TraverseType::PreOrder) {
-            preOrderTraversal(action);
+            preOrderTraversal(visit);
         }
         else if (type == TraverseType::InOrder) {
-            inOrderTraversal(action);
+            inOrderTraversal(visit);
         }
         else { // type == TraverseType::PostOrder
-            postOrderTraversal(action);
+            postOrderTraversal(visit);
         }
     }
 
@@ -165,38 +165,25 @@ private:
 
     void postOrderTraversal(std::function<void(Type)> visit) {
         std::stack<Node<Type>*> stack;
-        stack.push(getRoot().get());
-        auto node = stack.top();
-        while (!stack.empty()) {
+        auto node = getRoot().get();
+        auto lastVisitedNode = static_cast<Node<Type>*>(nullptr);
+        while (!stack.empty() || node != nullptr) {
             if (node != nullptr) {
-                if(node->hasRight())
-                    stack.push(node->getRight().get());
-                if(node->hasLeft())
-                    stack.push(node->getLeft().get());
+                stack.push(node);
                 node = node->getLeft().get();
             }
             else {
-                // we came to leaf
-                if (stack.top() == nullptr) {
-                    // there is no such child.
-                    // Proceed to search. Sometimes we'll find some left child 
-                    continue;
-                }
-                visit(stack.top()->getContent());
-                auto tmp = stack.top();
-                stack.pop();
-                if (stack.empty())
-                    break;
-                if (stack.top()->isLeaf() || stack.top()->isParent(tmp)) {
-                    visit(stack.top()->getContent());
-                    stack.pop();
-                }
+                auto peekNode = stack.top();
+                if (peekNode->getRight().get() != nullptr  && lastVisitedNode != peekNode->getRight().get())
+                    node = peekNode->getRight().get();
                 else {
-                    // visit right subtree
-                    node = stack.top();
+                    visit(peekNode->getContent());
+                    lastVisitedNode = stack.top();
+                    stack.pop();
                 }
             }
         }
+
     }
 
     UPtrNode<Type> root;

@@ -1,6 +1,9 @@
 #include <node.hpp>
 #include <tree.hpp>
 
+#include <array>
+#include <sstream>
+
 #define CATCH_CONFIG_MAIN
 #include <catch.hpp>
 
@@ -139,13 +142,54 @@ TEST_CASE("Insertion and removing are working", "[Tree::insert, Tree::remove]") 
 
 TEST_CASE("Test tree traversals", "Tree::traverse") {
     Tree<SomeClass> t;
-    for (int i = 0; i < 50; i++) {
+    for (int i = 0; i < 5; i++) {
         t.insert(SomeClass(i));
     }
-    t.traverse(Tree<SomeClass>::TraverseType::PreOrder, [](SomeClass sc) {cout << sc.a << "-"; });
-    cout << endl;
-    t.traverse(Tree<SomeClass>::TraverseType::InOrder, [](SomeClass sc) {cout << sc.a << "-"; });
-    cout << endl;
-    t.traverse(Tree<SomeClass>::TraverseType::PostOrder, [](SomeClass sc) {cout << sc.a << "-"; });
-    cout << endl;
+    /*
+                0
+                 \
+                  1
+                   \
+                    3
+                     \
+                      4
+    */
+    std::stringstream str;
+    t.traverse(Tree<SomeClass>::TraverseType::PreOrder, [&str](SomeClass sc) {str << sc.a;});
+    REQUIRE(str.str() == "01234");
+    str.str("");
+    str.clear();
+    t.traverse(Tree<SomeClass>::TraverseType::InOrder, [&str](SomeClass sc) {str << sc.a;});
+    REQUIRE(str.str() == "01234");
+    str.str("");
+    str.clear();
+    t.traverse(Tree<SomeClass>::TraverseType::PostOrder, [&str](SomeClass sc) {str << sc.a;});
+    REQUIRE(str.str() == "43210");
+    str.str("");
+    str.clear();
+
+    Tree<SomeClass> t2;
+    std::array<int,15> numbers = {8,4,12,2,6,10,14,1,3,5,7,9,11,13,15};
+    for (auto n : numbers) {
+        t2.insert(n);
+    }
+    /*
+                 _____8_____
+                /           \
+               4            12
+             /   \        /    \
+            2     6     10      14
+           / \   / \   /  \    /  \
+          1   3 5   7 9   11 13   15
+    */
+    t2.traverse(Tree<SomeClass>::TraverseType::PreOrder, [&str](SomeClass sc) {str << "(" << sc.a << ")"; });
+    REQUIRE(str.str() == "(8)(4)(2)(1)(3)(6)(5)(7)(12)(10)(9)(11)(14)(13)(15)");
+    str.str("");
+    str.clear();
+    t2.traverse(Tree<SomeClass>::TraverseType::InOrder, [&str](SomeClass sc) {str << "(" << sc.a << ")"; });
+    REQUIRE(str.str() == "(1)(2)(3)(4)(5)(6)(7)(8)(9)(10)(11)(12)(13)(14)(15)");
+    str.str("");
+    str.clear();
+    t2.traverse(Tree<SomeClass>::TraverseType::PostOrder, [&str](SomeClass sc) {str << "(" << sc.a << ")"; });
+    REQUIRE(str.str() == "(1)(3)(2)(5)(7)(6)(4)(9)(11)(10)(13)(15)(14)(12)(8)");
 }
