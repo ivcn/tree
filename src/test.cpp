@@ -25,6 +25,20 @@ struct SomeClass {
         return this->a <= that.a;
     }
 
+    void serialize(std::ostream& stream) const {
+        stream << this->a << " "
+            << this->b << " "
+            << this->c << " "
+            << this->d;
+    }
+
+    void deserialize(std::istream& stream) {
+        stream >> this->a;
+        stream >> this->b;
+        stream >> this->c;
+        stream >> this->d;
+    }
+
     int a;
     int b;
     double c;
@@ -140,7 +154,7 @@ TEST_CASE("Insertion and removing are working", "[Tree::insert, Tree::remove]") 
     */
 }
 
-TEST_CASE("Test tree traversals", "Tree::traverse") {
+TEST_CASE("Test tree traversals", "[Tree::traverse]") {
     Tree<SomeClass> t;
     for (int i = 0; i < 5; i++) {
         t.insert(SomeClass(i));
@@ -192,4 +206,23 @@ TEST_CASE("Test tree traversals", "Tree::traverse") {
     str.clear();
     t2.traverse(Tree<SomeClass>::TraverseType::PostOrder, [&str](SomeClass sc) {str << "(" << sc.a << ")"; });
     REQUIRE(str.str() == "(1)(3)(2)(5)(7)(6)(4)(9)(11)(10)(13)(15)(14)(12)(8)");
+}
+
+TEST_CASE("Testing serialization/deserialization", "[Tree::serialize, Tree::deserialize]") {
+    Tree<SomeClass> t;
+    std::array<int, 15> numbers = { 8,4,12,2,6,10,14,1,3,5,7,9,11,13,15 };
+    for (auto n : numbers) {
+        t.insert(n);
+    }
+
+    std::ostringstream sout;
+    t.serialize(sout);
+
+    Tree<SomeClass> t2;
+    std::istringstream sin(sout.str());
+    t2.deserialize(sin);
+
+    std::stringstream str;
+    t2.traverse(Tree<SomeClass>::TraverseType::PreOrder, [&str](SomeClass sc) {str << "(" << sc.a << ")"; });
+    REQUIRE(str.str() == "(8)(4)(2)(1)(3)(6)(5)(7)(12)(10)(9)(11)(14)(13)(15)");
 }

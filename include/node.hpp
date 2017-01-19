@@ -1,7 +1,6 @@
 #ifndef __NODE_HPP__
 #define __NODE_HPP__
 
-#include <iostream>
 #include <memory>
 
 template<class T>
@@ -24,7 +23,7 @@ public:
     Node(Node&& n) = default;
     Node& operator=(Node&& n) = default;
 
-    ~Node() = default;
+    virtual ~Node() { }
 
     template<class... Types>
     static auto makeNode(Types&&... args) {

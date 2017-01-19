@@ -5,6 +5,7 @@
 
 #include <functional>
 #include <stack>
+#include <type_traits>
 
 template<class T>
 using UPtrNode = std::unique_ptr<Node<T>>;
@@ -107,8 +108,49 @@ public:
         }
     }
 
-private:
+    template<typename T>
+    class is_serializable {
+    private:
+        template<typename U>
+        static int test(...);
 
+        template<typename U>
+        static auto test(const U&) -> decltype(declval<U>().serialize(declval<std::ostream>()));
+
+    public:
+        static constexpr bool value = std::is_same<void, decltype(test(T()))>::value;
+    };
+
+    template<typename U = Type>
+    typename std::enable_if<is_serializable<U>::value, void>::type
+    serialize(std::ostream& stream)
+    {
+        serialize_impl(getRoot().get(), stream);
+    }
+
+    template<typename T>
+    class is_deserializable {
+    private:
+        template<typename U>
+        static int test(...);
+
+        template<typename U>
+        static auto test(const U&) ->
+            decltype(declval<U>().deserialize(declval<std::istream>()));
+
+    public:
+        static constexpr bool value =
+            std::is_same<void, decltype(test(T()))>::value;
+    };
+
+    template<typename U = Type>
+    typename std::enable_if<is_deserializable<U>::value, void>::type
+    deserialize(std::istream& stream)
+    {
+        deserialize_impl(std::move(getRoot()), stream);
+    }
+
+private:
     void addNode(UPtrNode<Type>& subroot, UPtrNode<Type> newNode) {
         if (!subroot) {
             subroot = std::move(newNode);
@@ -184,6 +226,57 @@ private:
             }
         }
 
+    }
+
+    void serialize_impl(Node<Type>* subroot, std::ostream& stream) {
+        if (subroot == nullptr) {
+            stream << "{ _NULL_ }";
+            return;
+        }
+        stream << "{ ";
+        subroot->getContent().serialize(stream);
+        stream << " }";
+        serialize_impl(subroot->getLeft().get(), stream);
+        serialize_impl(subroot->getRight().get(), stream);
+    }
+
+    void deserialize_impl(UPtrNode<Type>& subroot, std::istream& stream) {
+        int c;
+        if ((c = stream.get()) != EOF) {
+            if (c == '{') {
+                stream.get(); //skip ws
+                if (stream.peek() == '_') {
+                    auto pos = stream.tellg();
+                    if (
+                        stream.get() == '_' &&
+                        stream.get() == 'N' &&
+                        stream.get() == 'U' &&
+                        stream.get() == 'L' &&
+                        stream.get() == 'L' &&
+                        stream.get() == '_'
+                        ) {
+                        stream.get(); //skip ws
+                        stream.get(); //skip right brace
+                        subroot.reset();
+                        return;
+                    }
+                    else {
+                        stream.seekg(pos);
+                    }
+                }
+                subroot = std::move(Node<Type>::makeNode());
+                auto tmp = std::make_unique<Type>();
+                tmp->deserialize(stream);
+                stream.get(); //skip ws
+                stream.get(); // skip right brace
+                subroot->setContent(std::move(tmp));
+                deserialize_impl(subroot->getLeft(), stream);
+                deserialize_impl(subroot->getRight(), stream);
+            }
+            else {
+                throw std::runtime_error("Deserialization failed");
+            }
+        }
     }
 
     UPtrNode<Type> root;
